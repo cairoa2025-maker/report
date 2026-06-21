@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير المتغيرات المكانية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .title i {
+            color: #667eea;
+            font-size: 36px;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            color: #34495e;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        input[type="date"],
+        input[type="file"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+            font-size: 15px;
+            background: #f8fafc;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            margin: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .buttons {
+            text-align: center;
+            margin: 30px 0 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        th,
+        td {
+            padding: 14px 10px;
+            text-align: center;
+            border: 1px solid #d0d7e0;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            border-bottom: 2px solid #4c5bac;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tr:hover {
+            background: #edf2ff;
+            transition: background 0.2s;
+        }
+
+        .message {
+            padding: 14px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .success {
+            background: #e6fffa;
+            color: #0c8599;
+            border-right: 5px solid #0c8599;
+        }
+
+        .error {
+            background: #fff5f5;
+            color: #c92a2a;
+            border-right: 5px solid #c92a2a;
+        }
+
+        .info {
+            background: #e7f5ff;
+            color: #1971c2;
+            border-right: 5px solid #1971c2;
+        }
+
+        #centerFilter + .select2-container {
+            width: 380px !important;
+            max-width: 100% !important;
+        }
+
+        #centerFilter + .select2-container .select2-selection--multiple {
+            min-height: 38px;
+            border: 1px solid #d1d9e6;
+            border-radius: 8px;
+        }
+
+        #centerFilter + .select2-container .select2-dropdown {
+            width: 380px !important;
+            max-width: 92vw !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1mm 1mm 1mm 1mm;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 9pt !important;
+                line-height: 1.2 !important;
+            }
+
+            .app {
+                padding: 2mm !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            .title {
+                font-size: 14pt !important;
+                margin: 0 0 2mm 0 !important;
+                padding: 0 !important;
+            }
+
+            .filters,
+            .buttons,
+            #excelFile,
+            label[for="excelFile"],
+            .message,
+            .select2-container {
+                display: none !important;
+            }
+
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 9pt !important;
+            }
+
+            th, td {
+                border: 1px solid #444 !important;
+                padding: 5px 6px !important;
+            }
+
+            th {
+                background: #667eea !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            tr.grand-total-row {
+                background: #e3f2fd !important;
+                font-weight: bold !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <h1 class="title"><i class="fas fa-chart-bar"></i> تقرير المتغيرات المكانية – <span id="currentDate"></span></h1>
+
+        <label>اختر ملف الإكسل</label>
+        <input type="file" id="excelFile" accept=".xlsx,.xls">
+
+        <div class="filters">
+            <div>
+                <label>تاريخ البداية</label>
+                <input type="date" id="startDate">
+            </div>
+            <div>
+                <label>تاريخ النهاية</label>
+                <input type="date" id="endDate">
+            </div>
+            <div>
+                <label>اسم المركز (اختيار متعدد)</label>
+                <select id="centerFilter" multiple></select>
+            </div>
+            <div>
+                <label>المجموعة / المنطقة (اختيار متعدد)</label>
+                <select id="groupFilter" multiple>
+                    <option value="__ALL_AHYAA__">كل الأحياء</option>
+                    <option value="__ALL_MOJTM3AT__">كل المجتمعات</option>
+                    <optgroup label="المناطق الجغرافية">
+                        <option value="__الجنوبية__">الجنوبية</option>
+                        <option value="__الشرقية__">الشرقية</option>
+                        <option value="__الشمالية__">الشمالية</option>
+                        <option value="__الغربية__">الغربية</option>
+                    </optgroup>
+                    <optgroup label="الأحياء">
+                        <option value="حى المرج">حى المرج</option>
+                        <option value="حى حلوان">حى حلوان</option>
+                        <option value="حى اول السلام">حى اول السلام</option>
+                        <option value="حى المقطم">حى المقطم</option>
+                        <option value="حى شرق مدينه نصر">حى شرق مدينه نصر</option>
+                        <option value="حى البساتين">حى البساتين</option>
+                        <option value="حى المعصره">حى المعصره</option>
+                        <option value="حى ثان السلام">حى ثان السلام</option>
+                        <option value="حى مصر القديمه">حى مصر القديمه</option>
+                        <option value="حى طره">حى طره</option>
+                    </optgroup>
+                    <optgroup label="المجتمعات">
+                        <option value="القاهرة الجديدة">القاهرة الجديدة</option>
+                        <option value="بدر">بدر</option>
+                        <option value="الشروق">الشروق</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div>
+                <label>القانونية (اختيار متعدد)</label>
+                <select id="lawStatusFilter" multiple>
+                    <option value="قانوني">قانوني</option>
+                    <option value="غير قانوني">غير قانوني</option>
+                    <option value="قانوني مؤقت">قانوني مؤقت</option>
+                    <option value="أخرى">أخرى</option>
+                    <option value="مطلوب التحديد">مطلوب التحديد</option>
+                </select>
+            </div>
+            <div>
+                <label>حالة الرد (اختيار متعدد)</label>
+                <select id="replyStatusFilter" multiple>
+                    <option value="تم الرد">تم الرد</option>
+                    <option value="لم يتم الرد">لم يتم الرد</option>
+                </select>
+            </div>
+            <div>
+                <label>حالة المعاينة (اختيار متعدد)</label>
+                <select id="inspectionFilter" multiple>
+                    <option value="تم المعاينة">تم المعاينة</option>
+                    <option value="لم تتم المعاينة">لم تتم المعاينة</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn" id="processBtn" disabled>عرض التقرير</button>
+            <button class="btn" id="exportSummaryBtn" disabled>تصدير التقرير</button>
+            <button class="btn" id="exportDetailedBtn" disabled>تصدير البيانات تفصيلي</button>
+            <button class="btn" id="exportKmlBtn" disabled style="background:linear-gradient(135deg,#2ecc71 0%,#27ae60 100%);">تصدير إلى KML</button>
+            <button class="btn" id="printBtn" disabled style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%);">طباعة التقرير</button>
+            <button class="btn" id="linkBtn" style="background:linear-gradient(135deg,#e74c3c 0%,#c0392b 100%);">تقارير الموجه 28</button>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th>اسم المركز</th>
+                    <th>إجمالي</th>
+                    <th>تم الرد</th>
+                    <th>لم يتم الرد</th>
+                    <th>تم المعاينة</th>
+                    <th>لم يتم المعاينة</th>
+                    <th>قانوني</th>
+                    <th>غير قانوني</th>
+                    <th>نسبة الغير قانوني</th>
+                    <th>قانوني مؤقت</th>
+                    <th>أخرى</th>
+                    <th>نسبة الإنجاز</th>
+                    <th>انجاز اليوم</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // ------------------------------------------------------------------
+        // تعريف المجموعات
+        // ------------------------------------------------------------------
+        const ALL_AHYAA = [
+            "حى المرج", "حى حلوان", "حى اول السلام", "حى المقطم", "حى شرق مدينه نصر",
+            "حى البساتين", "حى المعصره", "حى ثان السلام", "حى مصر القديمه", "حى طره",
+            "حى النزهه", "حى دار السلام", "حى المطريه", "حى منشاه ناصر", "حى عين شمس",
+            "حى غرب مدينه نصر", "حى الخليفه", "حى التبين", "حى حدائق القبه", "حى وسط",
+            "حى الساحل", "حى الزيتون", "حى المعادى", "حى الزاويه الحمراء", "حى مصر الجديده",
+            "حى الوايلى", "حى الشرابيه", "حى السيده زينب", "حى روض الفرج", "حى بولاق",
+            "حى الاميريه", "حى 15 مايو", "حى غرب", "حى باب الشعريه", "حى شبرا",
+            "حى الازبكيه", "حى الموسكى", "حى عابدين"
+        ];
+
+        const ALL_MOJTM3AT = [
+            "القاهرة الجديدة", "بدر", "الشروق", "العاصمة الادارية الجديدة", "مدينة 15 مايو",
+            "حدائق العاصمة", "ظهير صحراوى محافظة القاهرة", "ظهير هيئة المجتمعات العمراني"
+        ];
+
+        const STRUCTURE = {
+            'الجنوبية': ['حى البساتين','حى التبين','حى الخليفه','حى السيده زينب','حى المعادى','حى المعصره','حى المقطم','حى حلوان','حى دار السلام','حى طره','حى مصر القديمه','حى 15 مايو'],
+            'الشرقية': ['حى النزهه','حى شرق مدينه نصر','حى غرب مدينه نصر','حى المرج','حى المطريه','حى اول السلام','حى مصر الجديده','حى ثان السلام','حى عين شمس'],
+            'الشمالية': ['حى الاميريه','حى الزاويه الحمراء','حى الزيتون','حى الساحل','حى الشرابيه','حى حدائق القبه','حى روض الفرج','حى شبرا'],
+            'الغربية': ['حى الازبكيه','حى الموسكى','حى الوايلى','حى باب الشعريه','حى بولاق','حى عابدين','حى وسط','حى غرب','حى منشاه ناصر']
+        };
+
+        // ------------------------------------------------------------------
+        // المتغيرات العامة
+        // ------------------------------------------------------------------
+        const excelInput = document.getElementById('excelFile');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const centerFilter = document.getElementById('centerFilter');
+        const groupFilter = document.getElementById('groupFilter');
+        const lawFilter = document.getElementById('lawStatusFilter');
+        const replyFilter = document.getElementById('replyStatusFilter');
+        const inspectionFilter = document.getElementById('inspectionFilter');
+        const processBtn = document.getElementById('processBtn');
+        const exportSummaryBtn = document.getElementById('exportSummaryBtn');
+        const exportDetailedBtn = document.getElementById('exportDetailedBtn');
+        const exportKmlBtn = document.getElementById('exportKmlBtn');
+        const printBtn = document.getElementById('printBtn');
+        const linkBtn = document.getElementById('linkBtn');
+        const message = document.getElementById('message');
+        const summaryTableBody = document.querySelector('#summaryTable tbody');
+
+        let dataRows = [];
+        let allCenters = new Set();
+        let lastFilteredRows = [];
+
+        // تعطيل الأزرار في البداية (باستثناء لينك الموجه 28)
+        processBtn.disabled = true;
+        exportSummaryBtn.disabled = true;
+        exportDetailedBtn.disabled = true;
+        exportKmlBtn.disabled = true;
+        printBtn.disabled = true;
+
+        // ------------------------------------------------------------------
+        // عرض تاريخ اليوم في العنوان
+        // ------------------------------------------------------------------
+        document.getElementById('currentDate').textContent = new Date().toISOString().split('T')[0];
+
+        // ------------------------------------------------------------------
+        // تهيئة Select2
+        // ------------------------------------------------------------------
+        $(document).ready(function () {
+            $('select[multiple]').select2({
+                placeholder: "اختر واحد أو أكثر (يمكن البحث)",
+                allowClear: true,
+                closeOnSelect: false,
+                language: "ar",
+                dir: "rtl"
+            });
+
+            $('#groupFilter').on('change', function () {
+                const selected = $(this).val() || [];
+                let centersToAdd = [];
+
+                if (selected.includes('__ALL_MOJTM3AT__')) {
+                    centersToAdd.push(...ALL_MOJTM3AT);
+                }
+
+                if (selected.includes('__ALL_AHYAA__')) {
+                    const currentAllCenters = [...allCenters];
+                    const mojtm3atNormalized = ALL_MOJTM3AT.map(n => normalizeText(n));
+                    currentAllCenters.forEach(center => {
+                        const normCenter = normalizeText(center);
+                        if (!mojtm3atNormalized.some(m => normCenter.includes(m) || m.includes(normCenter))) {
+                            centersToAdd.push(center);
+                        }
+                    });
+                }
+
+                // معالجة المناطق الجغرافية
+                if (selected.includes('__الجنوبية__')) {
+                    centersToAdd.push(...STRUCTURE.الجنوبية);
+                }
+                if (selected.includes('__الشرقية__')) {
+                    centersToAdd.push(...STRUCTURE.الشرقية);
+                }
+                if (selected.includes('__الشمالية__')) {
+                    centersToAdd.push(...STRUCTURE.الشمالية);
+                }
+                if (selected.includes('__الغربية__')) {
+                    centersToAdd.push(...STRUCTURE.الغربية);
+                }
+
+                if (centersToAdd.length > 0) {
+                    let current = $('#centerFilter').val() || [];
+                    let updated = [...new Set([...current, ...centersToAdd])];
+                    $('#centerFilter').val(updated).trigger('change');
+                }
+            });
+        });
+
+        // ------------------------------------------------------------------
+        // الدوال المساعدة
+        // ------------------------------------------------------------------
+        function showMessage(txt, type = 'info') {
+            message.innerHTML = txt;
+            message.className = `message ${type}`;
+            message.style.display = 'block';
+            setTimeout(() => message.style.display = 'none', 5000);
+        }
+
+        function excelSerialToDate(serial) {
+            if (typeof serial !== 'number' || isNaN(serial)) return serial;
+            const utc_days = Math.floor(serial - 25569);
+            const utc_value = utc_days * 86400;
+            const date_info = new Date(utc_value * 1000);
+            const fractional_day = serial - Math.floor(serial) + 0.0000001;
+            let total_seconds = Math.floor(86400 * fractional_day);
+            const seconds = total_seconds % 60;
+            total_seconds -= seconds;
+            const hours = Math.floor(total_seconds / 3600);
+            const minutes = Math.floor(total_seconds / 60) % 60;
+            return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+        }
+
+        function normalizeText(text) {
+            if (!text || typeof text !== 'string') return '';
+            return text
+                .replace(/[\u0649\u0626\u06CC]/g, '\u064A')
+                .replace(/[\u0617-\u061A\u064B-\u065F\u0670]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function getSelectedValues(selectElement) {
+            return $(selectElement).val() || [];
+        }
+
+        // ------------------------------------------------------------------
+        // قراءة الملف
+        // ------------------------------------------------------------------
+        excelInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                readExcelFile();
+            }
+        });
+
+        function readExcelFile() {
+            const file = excelInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    dataRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    allCenters.clear();
+                    dataRows.forEach(row => {
+                        const keys = Object.keys(row);
+                        const center = row[keys[23]] || 'غير محدد';
+                        allCenters.add(center);
+                    });
+
+                    centerFilter.innerHTML = '';
+                    [...allCenters].sort().forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = c;
+                        centerFilter.appendChild(opt);
+                    });
+
+                    $('#centerFilter').select2('destroy').select2({
+                        placeholder: "اختر واحد أو أكثر (يمكن البحث)",
+                        allowClear: true,
+                        closeOnSelect: false,
+                        language: "ar",
+                        dir: "rtl"
+                    });
+
+                    showMessage(`تم تحميل ${dataRows.length} سجل`, 'success');
+
+                    processBtn.disabled = false;
+                    // لينك الموجه 28 يبقى مفعل دايماً بعد تحميل ملف (أو يمكنك إزالة disabled من HTML مباشرة)
+                    linkBtn.disabled = false;
+                } catch (err) {
+                    showMessage('خطأ في قراءة الملف: ' + err.message, 'error');
+                    processBtn.disabled = true;
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ------------------------------------------------------------------
+        // إنشاء التقرير (الدالة generateSummaryByCenter)
+        // ------------------------------------------------------------------
+        function generateSummaryByCenter() {
+            if (dataRows.length === 0) return showMessage('لم يتم تحميل ملف', 'error');
+            if (!startDateInput.value || !endDateInput.value) return showMessage('حدد التواريخ', 'error');
+
+            summaryTableBody.innerHTML = '';
+
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+            const selectedCenters = getSelectedValues(centerFilter);
+            const selectedGroups = getSelectedValues(groupFilter);
+            const selectedLaws = getSelectedValues(lawFilter);
+            const selectedReplies = getSelectedValues(replyFilter);
+            const selectedInspects = getSelectedValues(inspectionFilter);
+
+            const filtered_base = dataRows.filter(row => {
+                let dateVal = row['تاريخ الرصد'] || row['تاريخ المعاينة'] || '';
+                if (!dateVal) return false;
+
+                let rowDateStr;
+                if (typeof dateVal === 'number') {
+                    rowDateStr = excelSerialToDate(dateVal).toISOString().split('T')[0];
+                } else {
+                    let cleaned = dateVal.toString().trim().replace(/[\.\/-]/g, '-');
+                    rowDateStr = new Date(cleaned).toISOString().split('T')[0];
+                }
+
+                if (rowDateStr < start || rowDateStr > end) return false;
+
+                const keys = Object.keys(row);
+                const center = row[keys[23]] || 'غير محدد';
+                if (selectedCenters.length > 0 && !selectedCenters.includes(center)) return false;
+
+                return true;
+            });
+
+            if (filtered_base.length === 0) {
+                showMessage('لا توجد بيانات تطابق التاريخ والمركز/المجموعة', 'info');
+                exportSummaryBtn.disabled = true;
+                exportDetailedBtn.disabled = true;
+                exportKmlBtn.disabled = true;
+                printBtn.disabled = true;
+                return;
+            }
+
+            const totalByCenter = {};
+            filtered_base.forEach(row => {
+                const keys = Object.keys(row);
+                const center = row[keys[23]] || 'غير محدد';
+                totalByCenter[center] = (totalByCenter[center] || 0) + 1;
+            });
+
+            const filtered_details = filtered_base.filter(row => {
+                const rawLaw = (row['القانوني'] || '').toString().trim();
+                const normLaw = normalizeText(rawLaw);
+
+                if (selectedLaws.length > 0) {
+                    let matchLaw = false;
+                    if (selectedLaws.includes('قانوني مؤقت') && normLaw.includes('مؤقت')) matchLaw = true;
+                    if (selectedLaws.includes('قانوني') && normLaw === 'قانوني') matchLaw = true;
+                    if (selectedLaws.includes('غير قانوني') && normLaw === 'غير قانوني') matchLaw = true;
+                    if (selectedLaws.includes('أخرى') && ['أخرى','أخري','اخرى','اخري'].includes(normLaw)) matchLaw = true;
+                    if (selectedLaws.includes('مطلوب التحديد') && normLaw === 'مطلوب التحديد') matchLaw = true;
+                    if (!matchLaw) return false;
+                }
+
+                const inspect = (row['حالة المعاينة'] || '').toString().trim();
+                if (selectedInspects.length > 0) {
+                    let matchInspect = false;
+                    if (selectedInspects.includes('تم المعاينة') && inspect === 'تم المعاينة') matchInspect = true;
+                    if (selectedInspects.includes('لم تتم المعاينة') && inspect !== 'تم المعاينة') matchInspect = true;
+                    if (!matchInspect) return false;
+                }
+
+                let status = (row[' حالة المتغير'] || '').toString().trim();
+                const isReplied = status.includes('المركز الرئيسي');
+
+                if (selectedReplies.length > 0) {
+                    let matchReply = false;
+                    if (selectedReplies.includes('تم الرد') && isReplied) matchReply = true;
+                    if (selectedReplies.includes('لم يتم الرد') && !isReplied) matchReply = true;
+                    if (!matchReply) return false;
+                }
+
+                return true;
+            });
+
+            lastFilteredRows = filtered_details;
+
+            const summary = {};
+            let maxGovReplyDate = null;
+
+            filtered_details.forEach(row => {
+                let dateVal = row['تاريخ رد المحافظة'] || '';
+                if (dateVal) {
+                    let parsed = (typeof dateVal === 'number') ? excelSerialToDate(dateVal) : new Date(dateVal.toString().trim().replace(/[\.\/-]/g, '-'));
+                    if (!isNaN(parsed?.getTime()) && (!maxGovReplyDate || parsed > maxGovReplyDate)) {
+                        maxGovReplyDate = parsed;
+                    }
+                }
+            });
+
+            const lastReplyDateStr = maxGovReplyDate?.toISOString().split('T')[0] ?? null;
+
+            filtered_details.forEach(row => {
+                const keys = Object.keys(row);
+                const مركز = row[keys[23]] || 'غير محدد';
+
+                if (!summary[مركز]) {
+                    summary[مركز] = {
+                        تم_الرد: 0,
+                        لم_يتم_الرد: 0,
+                        تم_المعاينة: 0,
+                        قانوني: 0,
+                        غير_قانوني: 0,
+                        قانوني_مؤقت: 0,
+                        أخرى: 0,
+                        انجاز_اليوم: 0
+                    };
+                }
+
+                let status = (row[' حالة المتغير'] || '').toString().trim();
+
+                if (status.includes('المركز الرئيسي')) {
+                    summary[مركز].تم_الرد += 1;
+
+                    let govReplyDateStr = null;
+                    let d = row['تاريخ رد المحافظة'];
+                    if (d) {
+                        let pd = (typeof d === 'number') ? excelSerialToDate(d) : new Date(d.toString().trim().replace(/[\.\/-]/g, '-'));
+                        if (!isNaN(pd?.getTime())) govReplyDateStr = pd.toISOString().split('T')[0];
+                    }
+
+                    if (lastReplyDateStr && govReplyDateStr === lastReplyDateStr) {
+                        summary[مركز].انجاز_اليوم += 1;
+                    }
+
+                    const normLaw = normalizeText((row['القانوني'] || '').toString().trim());
+                    if (normLaw.includes('مؤقت') || normLaw.includes('موقت')) summary[مركز].قانوني_مؤقت += 1;
+                    else if (normLaw === 'قانوني' || normLaw === 'قانونى') summary[مركز].قانوني += 1;
+                    else if (normLaw === 'غير قانوني' || normLaw === 'غير قانونى') summary[مركز].غير_قانوني += 1;
+                    else if (['أخرى','أخري','اخرى','اخري'].includes(normLaw)) summary[مركز].أخرى += 1;
+                }
+
+                if (status.includes('المركز المحلي') || status.includes('التابلت') || status.includes('المحافظة')) {
+                    summary[مركز].لم_يتم_الرد += 1;
+                }
+
+                if ((row['حالة المعاينة'] || '').toString().trim() === 'تم المعاينة') {
+                    summary[مركز].تم_المعاينة += 1;
+                }
+            });
+
+            const rowsArray = [];
+
+            for (const مركز in totalByCenter) {
+                const total = totalByCenter[مركز];
+                const s = summary[مركز] || {
+                    تم_الرد: 0, لم_يتم_الرد: 0, تم_المعاينة: 0,
+                    قانوني: 0, غير_قانوني: 0, قانوني_مؤقت: 0, أخرى: 0, انجاز_اليوم: 0
+                };
+
+                const لم_يتم_المعاينة_بعد = total - s.تم_المعاينة;
+                const انجازNumeric = total > 0 ? (s.تم_الرد / total * 100) : 0;
+                const انجاز = انجازNumeric.toFixed(2);
+                const نسبة_غير_قانوني = s.تم_الرد > 0 ? (s.غير_قانوني / s.تم_الرد * 100).toFixed(2) : '0.00';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${مركز}</td>
+                    <td>${total}</td>
+                    <td>${s.تم_الرد}</td>
+                    <td>${s.لم_يتم_الرد}</td>
+                    <td>${s.تم_المعاينة}</td>
+                    <td>${لم_يتم_المعاينة_بعد}</td>
+                    <td>${s.قانوني}</td>
+                    <td>${s.غير_قانوني}</td>
+                    <td>${نسبة_غير_قانوني}%</td>
+                    <td>${s.قانوني_مؤقت}</td>
+                    <td>${s.أخرى}</td>
+                    <td style="font-weight:bold;color:#2e7d32;">${انجاز}%</td>
+                    <td style="font-weight:bold;color:#d81b60;">${s.انجاز_اليوم}</td>`;
+                tr.dataset.انجاز = انجازNumeric;
+                rowsArray.push(tr);
+            }
+
+            rowsArray.sort((a, b) => parseFloat(b.dataset.انجاز) - parseFloat(a.dataset.انجاز));
+            rowsArray.forEach(tr => summaryTableBody.appendChild(tr));
+
+            // الإجمالي الكلي
+            let grandTotal = 0, grandReplied = 0, grandNotReplied = 0, grandInspected = 0;
+            let grandLegal = 0, grandIllegal = 0, grandTemp = 0, grandOther = 0, grandToday = 0;
+
+            for (const center in totalByCenter) {
+                grandTotal += totalByCenter[center];
+                const s = summary[center] || {};
+                grandReplied += s.تم_الرد || 0;
+                grandNotReplied += s.لم_يتم_الرد || 0;
+                grandInspected += s.تم_المعاينة || 0;
+                grandLegal += s.قانوني || 0;
+                grandIllegal += s.غير_قانوني || 0;
+                grandTemp += s.قانوني_مؤقت || 0;
+                grandOther += s.أخرى || 0;
+                grandToday += s.انجاز_اليوم || 0;
+            }
+
+            const grandNotInspected = grandTotal - grandInspected;
+            const grandCompletion = grandTotal > 0 ? (grandReplied / grandTotal * 100).toFixed(2) : '0.00';
+            const grandIllegalPct = grandReplied > 0 ? (grandIllegal / grandReplied * 100).toFixed(2) : '0.00';
+
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'grand-total-row';
+            totalRow.innerHTML = `
+                <td style="text-align:right; background:#667eea; color:white;">الإجمالي الكلي</td>
+                <td>${grandTotal}</td>
+                <td>${grandReplied}</td>
+                <td>${grandNotReplied}</td>
+                <td>${grandInspected}</td>
+                <td>${grandNotInspected}</td>
+                <td>${grandLegal}</td>
+                <td>${grandIllegal}</td>
+                <td>${grandIllegalPct}%</td>
+                <td>${grandTemp}</td>
+                <td>${grandOther}</td>
+                <td style="color:#2e7d32;">${grandCompletion}%</td>
+                <td style="color:#d81b60;">${grandToday}</td>`;
+            summaryTableBody.appendChild(totalRow);
+
+            showMessage(`تم إنشاء التقرير (${Object.keys(totalByCenter).length} مركز - ${filtered_details.length} سجل مفلتر)`, 'success');
+            exportSummaryBtn.disabled = false;
+            exportDetailedBtn.disabled = false;
+            exportKmlBtn.disabled = false;
+            printBtn.disabled = false;
+        }
+
+        // ------------------------------------------------------------------
+        // التصدير والطباعة
+        // ------------------------------------------------------------------
+        function exportSummaryToExcel() {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('summaryTable'));
+            XLSX.utils.book_append_sheet(wb, ws, 'الملخص');
+            XLSX.writeFile(wb, `ملخص_تقرير_${startDateInput.value}_إلى_${endDateInput.value}.xlsx`);
+        }
+
+        function formatDateForExcel(dateValue) {
+            if (!dateValue) return 'no value';
+            let d;
+            if (typeof dateValue === 'number') {
+                d = excelSerialToDate(dateValue);
+            } else {
+                d = new Date(dateValue.toString().trim().replace(/[\.\/-]/g, '-'));
+            }
+            if (isNaN(d?.getTime())) return 'no value';
+            return `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}/${d.getFullYear()} ${d.toLocaleTimeString('en-US',{hour12:true})}`.replace(',', '');
+        }
+
+        function exportDetailedToExcel() {
+            if (lastFilteredRows.length === 0) return showMessage('لا توجد سجلات تفصيلية للتصدير', 'error');
+
+            const mainCenterKeywords = [
+                'جاري الدراسة في المركز الرئيسي',
+                'إعادة الدراسة في المركز الرئيسي',
+                'المركز الرئيسي المساحة'
+            ];
+
+            const localOrGovKeywords = [
+                'إعادة الدراسة في المركز المحلي والتابلت',
+                'جاري الدراسة في المركز المحلي والتابلت',
+                'التابلت',
+                'المحافظة'
+            ];
+
+            const formattedRows = lastFilteredRows.map(row => {
+                const keys = Object.keys(row);
+                const status = (row[' حالة المتغير'] || row['حالة المتغير'] || '').toString().trim();
+
+                const isMainCenter = mainCenterKeywords.some(kw => status.includes(kw));
+                const isLocalOrGov = localOrGovKeywords.some(kw => status.includes(kw));
+
+                let replied = 'no value';
+                let notReplied = 'no value';
+
+                if (isMainCenter || status.includes('المركز الرئيسي')) replied = 1;
+                else if (isLocalOrGov) notReplied = 1;
+                else notReplied = 1;
+
+                let receiveDate = 'no value';
+                const possibleDateFields = ['تاريخ ارسال المركز', 'تاريخ الارسال', 'تاريخ الرصد', 'تاريخ المعاينة'];
+                for (const field of possibleDateFields) {
+                    if (row[field]) {
+                        receiveDate = formatDateForExcel(row[field]);
+                        break;
+                    }
+                }
+
+                return {
+                    "رقم التقرير": row['رقم التقرير'] || '',
+                    "مسلسل التغير": row['رقم المتغير'] || '',
+                    "خط العرض": row['خط العرض'] || '',
+                    "خط الطول": row['خط الطول'] || '',
+                    "المركز": row['اسم المركز'] || row[keys[23]] || '',
+                    "الشياخه": row['اسم الشياخة'] || 'no value',
+                    "نوع المتغير": row['نوع المتغير'] || 'no value',
+                    "نوع الاملاك": row['الأملاك'] || 'no value',
+                    "نوع المحضر": row['نوع الرد'] || 'no value',
+                    "القانونيه": row['القانوني'] || 'no value',
+                    "الإزالة": row['حالة الإزالة'] || 'no value',
+                    "تم الرد": replied,
+                    "لم يتم الرد": notReplied,
+                    "مساحه المتغير": row['مساحة المتغير'] || 'no value',
+                    "اسم المهندس": row['اسم المهندس'] || 'no value',
+                    "الرقم القومي للمهندس": row['الرقم القومي الفني'] || 'no value',
+                    "اسم المواطن": row['اسم المواطن'] || 'no value',
+                    "الرقم القومي للمواطن": row['الرقم القومى للمواطن'] || 'no value',
+                    "جهة الولاية": row['نوع الولاية'] || 'no value',
+                    "تاريخ استقبال النقاط": receiveDate,
+                    "حالة المعاينة": row['حالة المعاينة'] || 'no value',
+                    "الحيز العمراني": row['الحيز العمرانى'] || '',
+                    "تاريخ رد المركز": formatDateForExcel(row['تاريخ رد المركز المحلى']),
+                    "ملاحظة المركز": row['ملاحظات المركز المحلى'] || 'no value',
+                    "ملاحظة المحافظة على الرد": row[' رد المحافظة'] || 'no value',
+                    "تعليق المركز الرئيسي": row['تعليق إعادة دراسة المركز الرئيسي'] || 'no value',
+                    "تاريخ رد المحافظة": formatDateForExcel(row['تاريخ رد المحافظة']),
+                    "حالة الدراسة": status || 'no value'
+                };
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(formattedRows);
+            XLSX.utils.book_append_sheet(wb, ws, 'التقرير');
+            XLSX.writeFile(wb, `تفصيلي_تقرير_${startDateInput.value}_إلى_${endDateInput.value}.xlsx`);
+
+            showMessage(`تم تصدير ${formattedRows.length} سجل بنجاح`, 'success');
+        }
+
+        function exportToKML() {
+            if (lastFilteredRows.length === 0) return showMessage('لا توجد بيانات مفلترة للتصدير إلى KML', 'error');
+
+            let latCol = null, lonCol = null;
+            if (lastFilteredRows.length > 0) {
+                const keys = Object.keys(lastFilteredRows[0]);
+                latCol = keys.find(k => k.includes('خط العرض') || k.toLowerCase().includes('lat'));
+                lonCol = keys.find(k => k.includes('خط الطول') || k.toLowerCase().includes('lon') || k.includes('طول'));
+            }
+
+            if (!latCol || !lonCol) return showMessage('لم يتم العثور على أعمدة خط العرض / خط الطول', 'error');
+
+            let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>نقاط التقرير ${startDateInput.value} إلى ${endDateInput.value}</name>
+    <Style id="pinStyle">
+      <IconStyle><color>ff00aaff</color><scale>1.1</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href></Icon></IconStyle>
+      <LabelStyle><scale>0.8</scale></LabelStyle>
+    </Style>
+    <Folder><name>النقاط</name>`;
+
+            lastFilteredRows.forEach((row, i) => {
+                let lat = parseFloat((row[latCol] || '').toString().trim().replace(/,/g, '.'));
+                let lon = parseFloat((row[lonCol] || '').toString().trim().replace(/,/g, '.'));
+
+                if (isNaN(lat) || isNaN(lon)) return;
+
+                let displayName = (row['رقم المتغير'] || row['رقم المتغير '] || `نقطة ${i + 1}`).toString().trim();
+                displayName = displayName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+                kml += `
+      <Placemark>
+        <name>${displayName}</name>
+        <styleUrl>#pinStyle</styleUrl>
+        <Point><coordinates>${lon},${lat},0</coordinates></Point>
+        <ExtendedData>`;
+
+                Object.entries(row).forEach(([key, value]) => {
+                    if (value == null || value === '') return;
+                    let safeKey = key.trim().replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '') || `field_${i}`;
+                    let safeValue = String(value).trim()
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                    kml += `<Data name="${safeKey}"><displayName>${key.trim()}</displayName><value>${safeValue}</value></Data>`;
+                });
+
+                kml += `</ExtendedData></Placemark>`;
+            });
+
+            kml += `</Folder></Document></kml>`;
+
+            const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `نقاط_التقرير_${startDateInput.value}_إلى_${endDateInput.value}.kml`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage(`تم تصدير ${lastFilteredRows.length} نقطة إلى KML`, 'success');
+        }
+
+        // ربط الأحداث
+        processBtn.onclick = generateSummaryByCenter;
+        exportSummaryBtn.onclick = exportSummaryToExcel;
+        exportDetailedBtn.onclick = exportDetailedToExcel;
+        exportKmlBtn.onclick = exportToKML;
+        printBtn.onclick = () => {
+            if (summaryTableBody.children.length === 0) {
+                showMessage('لا يوجد تقرير للطباعة', 'info');
+                return;
+            }
+            window.print();
+        };
+
+        linkBtn.onclick = () => {
+            window.open('https://cairoa2025-maker.github.io/moga/', '_blank');
+        };
+    </script>
+</body>
+</html>
