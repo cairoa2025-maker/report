@@ -457,18 +457,30 @@
                     });
                 }
 
-                // معالجة المناطق الجغرافية
+                // دالة داخلية للبحث المطابق بالـ Normalization لتفادي مشاكل الياء/الهاء/التاء
+                function findMatchingCentersFromExcel(targetList) {
+                    let matched = [];
+                    const normalizedTargets = targetList.map(t => normalizeText(t));
+                    allCenters.forEach(center => {
+                        if (normalizedTargets.includes(normalizeText(center))) {
+                            matched.push(center);
+                        }
+                    });
+                    return matched.length > 0 ? matched : targetList;
+                }
+
+                // معالجة المناطق الجغرافية بالدمج الذكي المطابق لبيانات الإكسل
                 if (selected.includes('__الجنوبية__')) {
-                    centersToAdd.push(...STRUCTURE.الجنوبية);
+                    centersToAdd.push(...findMatchingCentersFromExcel(STRUCTURE.الجنوبية));
                 }
                 if (selected.includes('__الشرقية__')) {
-                    centersToAdd.push(...STRUCTURE.الشرقية);
+                    centersToAdd.push(...findMatchingCentersFromExcel(STRUCTURE.الشرقية));
                 }
                 if (selected.includes('__الشمالية__')) {
-                    centersToAdd.push(...STRUCTURE.الشمالية);
+                    centersToAdd.push(...findMatchingCentersFromExcel(STRUCTURE.الشمالية));
                 }
                 if (selected.includes('__الغربية__')) {
-                    centersToAdd.push(...STRUCTURE.الغربية);
+                    centersToAdd.push(...findMatchingCentersFromExcel(STRUCTURE.الغربية));
                 }
 
                 if (centersToAdd.length > 0) {
@@ -507,6 +519,8 @@
             if (!text || typeof text !== 'string') return '';
             return text
                 .replace(/[\u0649\u0626\u06CC]/g, '\u064A')
+                .replace(/[\u0622\u0623\u0625]/g, '\u0627')
+                .replace(/[\u0629]/g, '\u0647')
                 .replace(/[\u0617-\u061A\u064B-\u065F\u0670]/g, '')
                 .replace(/\s+/g, ' ')
                 .trim()
@@ -564,7 +578,6 @@
                     showMessage(`تم تحميل ${dataRows.length} سجل`, 'success');
 
                     processBtn.disabled = false;
-                    // لينك الموجه 28 يبقى مفعل دايماً بعد تحميل ملف (أو يمكنك إزالة disabled من HTML مباشرة)
                     linkBtn.disabled = false;
                 } catch (err) {
                     showMessage('خطأ في قراءة الملف: ' + err.message, 'error');
@@ -735,11 +748,11 @@
             for (const مركز in totalByCenter) {
                 const total = totalByCenter[مركز];
                 const s = summary[مركز] || {
-                    تم_الرد: 0, لم_يتم_الرد: 0, تم_المعاينة: 0,
+                    تم_الرد: 0, لم_يتم_الرد: 0, team_al_moayna: 0,
                     قانوني: 0, غير_قانوني: 0, قانوني_مؤقت: 0, أخرى: 0, انجاز_اليوم: 0
                 };
 
-                const لم_يتم_المعاينة_بعد = total - s.تم_المعاينة;
+                const لم_يتم_المعاينة_بعد = total - (s.تم_المعاينة || 0);
                 const انجازNumeric = total > 0 ? (s.تم_الرد / total * 100) : 0;
                 const انجاز = انجازNumeric.toFixed(2);
                 const نسبة_غير_قانوني = s.تم_الرد > 0 ? (s.غير_قانوني / s.تم_الرد * 100).toFixed(2) : '0.00';
@@ -750,7 +763,7 @@
                     <td>${total}</td>
                     <td>${s.تم_الرد}</td>
                     <td>${s.لم_يتم_الرد}</td>
-                    <td>${s.تم_المعاينة}</td>
+                    <td>${s.تم_المعاينة || 0}</td>
                     <td>${لم_يتم_المعاينة_بعد}</td>
                     <td>${s.قانوني}</td>
                     <td>${s.غير_قانوني}</td>
